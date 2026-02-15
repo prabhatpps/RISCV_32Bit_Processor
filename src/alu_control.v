@@ -45,7 +45,7 @@
 //       funct7[5] = 1 => SRA/SRAI
 //
 // Revision History:
-//   - 16-Feb-2026 : Initial version
+//   - 15-Feb-2026 : Initial version
 //=====================================================================
 
 module alu_control (
