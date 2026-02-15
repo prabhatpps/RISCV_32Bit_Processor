@@ -1,7 +1,7 @@
 //=====================================================================
 // File        : imm_gen.v
 // Author      : Prabhat Pandey
-// Created On  : 13-Feb-2026
+// Created On  : 15-Feb-2026
 // Project     : RV32I Single-Cycle 32-bit RISC-V Processor
 // Module Name : imm_gen
 // Description :
@@ -32,7 +32,7 @@
 //   Because instruction format is uniquely determined by opcode.
 //
 // Revision History:
-//   - 13-Feb-2026 : Initial version
+//   - 15-Feb-2026 : Initial version
 //=====================================================================
 
 module imm_gen (
