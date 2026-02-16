@@ -36,7 +36,7 @@
 //   - If mem_write=0, no memory update occurs.
 //
 // Revision History:
-//   - 13-Feb-2026 : Initial version
+//   - 16-Feb-2026 : Initial version
 //=====================================================================
 
 module dmem #(
