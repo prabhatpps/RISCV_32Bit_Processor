@@ -8,10 +8,15 @@
 //   This module implements Instruction Memory (IMEM) for an RV32
 //   single-cycle RISC-V processor.
 //
-//   The instruction memory is modeled as a ROM-like array initialized
-//   using $readmemh from a HEX file.
+//   IMPORTANT (Physical Design Version):
+//   - This version is written to be synthesis-friendly for RTL-to-GDS
+//     flows (OpenLane / Yosys).
+//   - Therefore, it DOES NOT use $readmemh or any file-based memory
+//     initialization, because that is simulation-only and not ASIC-real.
 //
-//   Key Points:
+//   The memory is modeled as a ROM-like array with combinational read.
+//
+// Key Points:
 //   - Instructions are 32-bit wide (one word)
 //   - RISC-V instructions are always 4-byte aligned
 //   - Therefore, the memory is indexed using addr[31:2] (word address)
@@ -21,22 +26,17 @@
 //   - No write port (ROM behavior for instruction memory)
 //
 // Notes:
-//   - This is perfect for simulation and FPGA-style ROM.
-//   - For ASIC, IMEM would be replaced by a real ROM or instruction cache.
-//
-// File Format for $readmemh:
-//   Each line should contain ONE 32-bit instruction in HEX.
-//   Example (program.hex):
-//      00000013   // NOP  (addi x0, x0, 0)
-//      00100093   // addi x1, x0, 1
+//   - In real silicon, IMEM would be a ROM / SRAM / instruction cache.
+//   - In OpenLane demo flows, this can synthesize into a large mux/flop
+//     structure unless replaced by a macro.
 //
 // Revision History:
+//   - 16-Feb-2026 : Removed $readmemh for synthesis / physical design.
 //   - 14-Feb-2026 : Initial version
 //=====================================================================
 
 module imem #(
-    parameter MEM_DEPTH_WORDS = 1024,                  // Total words in IMEM
-    parameter MEM_INIT_FILE   = "program.hex"          // HEX file for initialization
+    parameter MEM_DEPTH_WORDS = 1024                   // Total words in IMEM
 )(
     input  wire [31:0] addr,                           // Byte address from PC
     output wire [31:0] instr                           // 32-bit instruction output
@@ -46,36 +46,36 @@ module imem #(
     // Instruction Memory Storage
     //=================================================================
     // Each entry is one 32-bit RISC-V instruction word.
-    // MEM_DEPTH_WORDS = number of 32-bit words.
     //=================================================================
     reg [31:0] mem [0:MEM_DEPTH_WORDS-1];
 
     //=================================================================
-    // Memory Initialization
+    // Optional: Default initialization to NOPs (synthesis-friendly)
     //=================================================================
-    // Loads instruction words from a hex file at simulation start.
-    // If file is missing, IMEM will contain X/unknown values.
+    // NOTE:
+    // - This is not how ASIC ROM works in real silicon.
+    // - But it avoids X-propagation in simulation.
+    // - It is also accepted by most synthesis tools.
+    //
+    // NOP in RV32I = addi x0, x0, 0 = 32'h00000013
     //=================================================================
+    integer i;
     initial begin
-        $readmemh(MEM_INIT_FILE, mem);
+        for (i = 0; i < MEM_DEPTH_WORDS; i = i + 1)
+            mem[i] = 32'h0000_0013;
     end
 
     //=================================================================
     // Address Mapping (Word Addressing)
     //=================================================================
-    // RISC-V instructions are 4-byte aligned.
-    // So:
-    //   PC = byte address
-    //   Index = PC / 4 = PC[31:2]
+    // Index = PC / 4 = addr[31:2]
+    // We keep only the lower bits required to index MEM_DEPTH_WORDS.
     //=================================================================
     wire [$clog2(MEM_DEPTH_WORDS)-1:0] word_index;
-    assign word_index = addr[31:2];
+    assign word_index = addr[($clog2(MEM_DEPTH_WORDS)+1):2];
 
     //=================================================================
     // Combinational Read Output
-    //=================================================================
-    // Reads instruction directly from memory.
-    // No clock required (ROM-like).
     //=================================================================
     assign instr = mem[word_index];
 
