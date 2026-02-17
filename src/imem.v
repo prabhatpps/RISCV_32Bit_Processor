@@ -10,7 +10,7 @@
 //
 //   IMPORTANT (Physical Design Version):
 //   - This version is written to be synthesis-friendly for RTL-to-GDS
-//     flows (OpenLane / Yosys).
+//     flows.
 //   - Therefore, it DOES NOT use $readmemh or any file-based memory
 //     initialization, because that is simulation-only and not ASIC-real.
 //

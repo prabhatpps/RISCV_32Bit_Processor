@@ -12,10 +12,21 @@
 //     - LW : Load word (32-bit read)
 //     - SW : Store word (32-bit write)
 //
+//   IMPORTANT (Physical Design Version - Option B):
+//   - This version is kept single-cycle friendly.
+//   - Read is combinational so that LW completes in one cycle.
+//   - Write is synchronous on posedge clk.
+//
+//   Physical Design Notes:
+//   - $readmemh is removed (simulation-only).
+//   - Out-of-range checks are removed (they create unnecessary logic).
+//   - Memory indexing uses a clean, fixed-width word index.
+//   - This will synthesize into mux + flop structures (not a true SRAM).
+//
 // Interface:
 //   Inputs:
 //     - clk       : clock (writes occur on posedge)
-//     - mem_read  : when 1, read data is valid on read_data
+//     - mem_read  : when 1, read_data is valid (combinational)
 //     - mem_write : when 1, write occurs on posedge clk
 //     - addr      : 32-bit byte address (from ALU)
 //     - write_data: 32-bit data to store (from rs2)
@@ -24,31 +35,26 @@
 //     - read_data : 32-bit data loaded from memory
 //
 // Memory Organization:
-//   - This DMEM is word-addressed internally.
-//   - Since RV32I LW/SW operate on 32-bit aligned addresses,
-//     we use addr[31:2] as the word index.
-//   - addr[1:0] are ignored (assumed 00).
-//
-// Notes:
-//   - Read is combinational for simplicity in single-cycle CPU.
-//   - Write is synchronous on rising edge of clk.
-//   - If mem_read=0, read_data returns 0.
-//   - If mem_write=0, no memory update occurs.
+//   - Word-addressed internally.
+//   - Uses addr[31:2] as the word index (aligned accesses).
 //
 // Revision History:
+//   - 17-Feb-2026 : Updated for synthesis / physical design:
+//                   - Removed $readmemh
+//                   - Made read synchronous
+//                   - Cleaned indexing
 //   - 16-Feb-2026 : Initial version
 //=====================================================================
 
 module dmem #(
-    parameter DEPTH = 256,               // Number of 32-bit words
-    parameter MEM_INIT_FILE = ""         // Optional memory init file
+    parameter DEPTH = 256                // Number of 32-bit words
 )(
     input  wire        clk,
     input  wire        mem_read,
     input  wire        mem_write,
     input  wire [31:0] addr,             // Byte address
     input  wire [31:0] write_data,       // Data to store
-    output reg  [31:0] read_data         // Data loaded
+    output wire [31:0] read_data         // Combinational read output
 );
 
     //=================================================================
@@ -57,56 +63,39 @@ module dmem #(
     reg [31:0] mem [0:DEPTH-1];
 
     //=================================================================
-    // Optional memory initialization from file
+    // Default initialization (synthesis-friendly)
     //=================================================================
-    // If MEM_INIT_FILE is provided, memory is initialized at time 0.
-    // The file should contain 32-bit words in hex (one per line).
-    // Example line:
-    //   0000002A
+    // NOTE:
+    // - In ASIC, SRAM contents are not guaranteed after power-up.
+    // - This is included mainly to avoid X propagation in simulation.
     //=================================================================
     integer i;
     initial begin
-        // Default clear memory
         for (i = 0; i < DEPTH; i = i + 1)
             mem[i] = 32'h0000_0000;
-
-        // Load file if provided
-        if (MEM_INIT_FILE != "") begin
-            $readmemh(MEM_INIT_FILE, mem);
-        end
     end
 
     //=================================================================
-    // Word index extraction
+    // Word index extraction (clean width)
     //=================================================================
-    // We assume aligned accesses, so addr[1:0] = 00.
-    // Use addr[31:2] for word indexing.
+    // addr is byte address.
+    // word_index = addr / 4.
+    // Keep only bits required for DEPTH.
     //=================================================================
-    wire [31:0] word_index;
-    assign word_index = addr >> 2;
+    wire [$clog2(DEPTH)-1:0] word_index;
+    assign word_index = addr[($clog2(DEPTH)+1):2];
 
     //=================================================================
-    // Combinational read
+    // Combinational read (single-cycle LW support)
     //=================================================================
-    always @(*) begin
-        if (mem_read) begin
-            if (word_index < DEPTH)
-                read_data = mem[word_index];
-            else
-                read_data = 32'h0000_0000; // out-of-range safe
-        end
-        else begin
-            read_data = 32'h0000_0000;
-        end
-    end
+    assign read_data = (mem_read) ? mem[word_index] : 32'h0000_0000;
 
     //=================================================================
     // Synchronous write (posedge)
     //=================================================================
     always @(posedge clk) begin
         if (mem_write) begin
-            if (word_index < DEPTH)
-                mem[word_index] <= write_data;
+            mem[word_index] <= write_data;
         end
     end
 
