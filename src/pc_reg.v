@@ -22,8 +22,15 @@
 //     because alignment should be guaranteed by pc_next_logic.
 //     (This avoids masking bugs during debugging.)
 //
+// Reset Style (IMPORTANT FOR PHYSICAL DESIGN):
+//   - This PC register uses synchronous active-low reset.
+//   - That means rst_n is sampled only on the rising edge of clk.
+//   - This is preferred for ASIC/physical design flows because it avoids
+//     asynchronous reset timing/routing complexity.
+//
 // Revision History:
 //   - 16-Feb-2026 : Updated reset style to synchronous active-low reset
+//                   (physical-design friendly).
 //   - 12-Feb-2026 : Initial version
 //=====================================================================
 
