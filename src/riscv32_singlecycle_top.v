@@ -22,16 +22,17 @@
 //     - wb_mux               : selects writeback data
 //     - pc_next_logic        : selects next PC value
 //
-// Notes:
-//   - This is a single-cycle CPU: fetch, decode, execute, mem, wb
-//     all happen in one clock cycle.
-//   - Reset initializes PC to 0 and clears regfile.
-//   - Instruction memory and data memory are behavioral models.
-//   - No pipeline, no hazards, no stalls.
+// Notes (Physical Design Branch):
+//   - This is still a single-cycle CPU (LW uses combinational DMEM read).
+//   - pc_reg uses synchronous reset.
+//   - imem/dmem are synthesis-friendly versions:
+//       - No $readmemh
+//       - No MEM_INIT_FILE
 //
 // Revision History:
-//   - 13-Feb-2026 : Initial version
+//   - 17-Feb-2026 : Updated IMEM/DMEM integration for synthesis-friendly RTL
 //   - 16-Feb-2026 : Corrected regfile + imm_gen port integration
+//   - 16-Feb-2026 : Initial version
 //=====================================================================
 
 module riscv32_singlecycle_top (
@@ -224,13 +225,12 @@ module riscv32_singlecycle_top (
     );
 
     //=============================================================
-    // 11) Data Memory (DMEM)
+    // 11) Data Memory (DMEM) - Single-cycle friendly
     //=============================================================
     wire [31:0] mem_data;
 
     dmem #(
-        .DEPTH(256),
-        .MEM_INIT_FILE("")
+        .DEPTH(256)
     ) u_dmem (
         .clk        (clk),
         .mem_read   (mem_read),
