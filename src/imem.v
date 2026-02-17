@@ -31,7 +31,7 @@
 //     structure unless replaced by a macro.
 //
 // Revision History:
-//   - 16-Feb-2026 : Removed $readmemh for synthesis / physical design.
+//   - 17-Feb-2026 : Removed $readmemh for synthesis / physical design.
 //   - 14-Feb-2026 : Initial version
 //=====================================================================
 

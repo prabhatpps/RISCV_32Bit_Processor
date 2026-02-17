@@ -29,7 +29,7 @@
 //     asynchronous reset timing/routing complexity.
 //
 // Revision History:
-//   - 16-Feb-2026 : Updated reset style to synchronous active-low reset
+//   - 17-Feb-2026 : Updated reset style to synchronous active-low reset
 //                   (physical-design friendly).
 //   - 12-Feb-2026 : Initial version
 //=====================================================================
