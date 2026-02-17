@@ -23,12 +23,13 @@
 //     (This avoids masking bugs during debugging.)
 //
 // Revision History:
+//   - 16-Feb-2026 : Updated reset style to synchronous active-low reset
 //   - 12-Feb-2026 : Initial version
 //=====================================================================
 
 module pc_reg (
     input  wire        clk,        // Clock input (positive-edge triggered)
-    input  wire        rst_n,      // Active-low asynchronous reset
+    input  wire        rst_n,      // Active-low synchronous reset
     input  wire [31:0] pc_next,    // Next PC value computed by pc_next_logic
     output reg  [31:0] pc_current  // Current PC value used for instruction fetch
 );
@@ -37,16 +38,15 @@ module pc_reg (
     // Sequential Logic: Program Counter Update
     //=================================================================
     // Triggering:
-    //   - Updates on rising edge of clk
-    //   - Resets immediately on falling edge of rst_n
+    //   - Updates only on rising edge of clk
     //
     // Reset Behavior:
-    //   - PC is reset to 0x00000000
+    //   - If rst_n == 0 on a rising edge, PC resets to 0x00000000
     //
     // Normal Operation:
     //   - PC loads pc_next every cycle
     //=================================================================
-    always @(posedge clk or negedge rst_n) begin
+    always @(posedge clk) begin
         if (!rst_n) begin
             pc_current <= 32'h0000_0000;   // Reset PC to address 0
         end
