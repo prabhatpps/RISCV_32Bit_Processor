@@ -5,39 +5,64 @@
 // Project     : RV32I Single-Cycle 32-bit RISC-V Processor
 // Module Name : riscv32_singlecycle_top
 // Description :
-//   Top-level integration module for an RV32I Single-Cycle 32-bit
-//   RISC-V processor.
+//   ASIC / Physical-Design friendly top-level module for the RV32I
+//   single-cycle CPU core.
 //
-//   This module connects the complete datapath and control blocks:
+//   This version is created specifically for RTL-to-GDS flow using
+//   OpenLane / Sky130.
 //
-//     - pc_reg               : holds current PC
-//     - imem                 : instruction memory
-//     - decoder_controller   : generates control signals
-//     - regfile              : 32x32 register file (with rst_n)
-//     - imm_gen              : immediate generator (I/S/B/U/J)
-//     - alu_control          : ALU control decoder
-//     - alu                  : executes arithmetic/logic ops
-//     - branch_unit          : evaluates branch conditions
-//     - dmem                 : data memory (lw/sw)
-//     - wb_mux               : selects writeback data
-//     - pc_next_logic        : selects next PC value
+//   IMPORTANT CHANGE:
+//   ------------------------------------------------------------
+//   - IMEM and DMEM are removed from inside the core.
+//   - Instruction input comes from external memory:
+//         instr (input)
+//   - Data memory interface is exposed as external ports:
+//         mem_read, mem_write, mem_addr, mem_wdata, mem_rdata
 //
-// Notes (Physical Design Branch):
-//   - This is still a single-cycle CPU (LW uses combinational DMEM read).
-//   - pc_reg uses synchronous reset.
-//   - imem/dmem are synthesis-friendly versions:
-//       - No $readmemh
-//       - No MEM_INIT_FILE
+//   This makes the CPU core synthesizable and realistic for ASIC,
+//   because SRAM macros (or ROM) must be instantiated separately.
+//
+// Modules included:
+//   - pc_reg
+//   - decoder_controller
+//   - regfile
+//   - imm_gen
+//   - alu_control
+//   - alu
+//   - branch_unit
+//   - pc_next_logic
+//   - wb_mux
+//
+// Notes:
+//   - Single-cycle CPU: fetch/decode/execute/mem/wb in one cycle.
+//   - This module assumes instruction is stable for the cycle.
+//   - Reset clears PC and regfile.
 //
 // Revision History:
+//   - 18-Feb-2026 : Completly removed memory blocks for a PD-friendly core top
 //   - 17-Feb-2026 : Updated IMEM/DMEM integration for synthesis-friendly RTL
 //   - 16-Feb-2026 : Corrected regfile + imm_gen port integration
 //   - 16-Feb-2026 : Initial version
 //=====================================================================
 
 module riscv32_singlecycle_top (
-    input  wire clk,
-    input  wire rst_n
+    input  wire        clk,
+    input  wire        rst_n,
+
+    //=============================================================
+    // Instruction Memory Interface (Read-only)
+    //=============================================================
+    output wire [31:0] imem_addr,     // address = PC
+    input  wire [31:0] imem_rdata,    // instruction word from IMEM
+
+    //=============================================================
+    // Data Memory Interface (LW/SW)
+    //=============================================================
+    output wire        dmem_read_en,
+    output wire        dmem_write_en,
+    output wire [31:0] dmem_addr,
+    output wire [31:0] dmem_wdata,
+    input  wire [31:0] dmem_rdata
 );
 
     //=============================================================
@@ -54,14 +79,12 @@ module riscv32_singlecycle_top (
     );
 
     //=============================================================
-    // 2) Instruction Fetch (IMEM)
+    // 2) Instruction Fetch (External IMEM)
     //=============================================================
-    wire [31:0] instr;
+    assign imem_addr = pc_current;
 
-    imem u_imem (
-        .addr  (pc_current),
-        .instr (instr)
-    );
+    wire [31:0] instr;
+    assign instr = imem_rdata;
 
     //=============================================================
     // 3) Extract instruction fields
@@ -118,7 +141,7 @@ module riscv32_singlecycle_top (
     );
 
     //=============================================================
-    // 5) Register File (with reset)
+    // 5) Register File
     //=============================================================
     wire [31:0] rs1_val;
     wire [31:0] rs2_val;
@@ -137,7 +160,7 @@ module riscv32_singlecycle_top (
     );
 
     //=============================================================
-    // 6) Immediate Generator (I/S/B/U/J)
+    // 6) Immediate Generator
     //=============================================================
     wire [31:0] imm_i;
     wire [31:0] imm_s;
@@ -172,20 +195,9 @@ module riscv32_singlecycle_top (
     wire [31:0] alu_in_a;
     wire [31:0] alu_in_b;
 
-    // ALU A selection:
-    //   - Normally rs1
-    //   - For AUIPC, use PC
     assign alu_in_a = (use_pc_as_alu_a) ? pc_current : rs1_val;
 
-    // ALU B selection:
-    //   - Normally rs2
-    //   - For immediate-based ops, use immediate
-    //
-    // IMPORTANT:
-    //   STORE uses imm_s, not imm_i
-    //
     wire [31:0] selected_imm;
-
     assign selected_imm =
         (opcode == 7'b0100011) ? imm_s : // STORE
                                 imm_i;  // LOAD, OP-IMM, JALR
@@ -213,7 +225,7 @@ module riscv32_singlecycle_top (
     );
 
     //=============================================================
-    // 10) Branch Unit (Condition Evaluation)
+    // 10) Branch Unit
     //=============================================================
     wire take_branch;
 
@@ -225,20 +237,15 @@ module riscv32_singlecycle_top (
     );
 
     //=============================================================
-    // 11) Data Memory (DMEM) - Single-cycle friendly
+    // 11) External DMEM wiring
     //=============================================================
-    wire [31:0] mem_data;
+    assign dmem_read_en  = mem_read;
+    assign dmem_write_en = mem_write;
+    assign dmem_addr     = alu_result;
+    assign dmem_wdata    = rs2_val;
 
-    dmem #(
-        .DEPTH(256)
-    ) u_dmem (
-        .clk        (clk),
-        .mem_read   (mem_read),
-        .mem_write  (mem_write),
-        .addr       (alu_result),
-        .write_data (rs2_val),
-        .read_data  (mem_data)
-    );
+    wire [31:0] mem_data;
+    assign mem_data = dmem_rdata;
 
     //=============================================================
     // 12) PC Next Logic
@@ -262,7 +269,6 @@ module riscv32_singlecycle_top (
     //=============================================================
     // 13) Writeback Mux
     //=============================================================
-    // AUIPC requires PC + imm_u
     wire [31:0] pc_plus_imm_u;
     assign pc_plus_imm_u = pc_current + imm_u;
 
