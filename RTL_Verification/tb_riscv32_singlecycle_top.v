@@ -53,14 +53,14 @@
 //
 // Run Commands:
 //   iverilog -o ./Verification_Results/result_tb_top_addi \
-//       ./src/*.v ./RTL_Verification/tb_riscv32_singlecycle_top_addi_prog.v
+//       ./src/*.v ./RTL_Verification/tb_riscv32_singlecycle_top.v
 //
 //   vvp ./Verification_Results/result_tb_top_addi
 //=====================================================================
 
 `timescale 1ns/1ps
 
-module tb_riscv32_singlecycle_top_addi_prog;
+module tb_riscv32_singlecycle_top;
 
     //=============================================================
     // Clock / Reset
