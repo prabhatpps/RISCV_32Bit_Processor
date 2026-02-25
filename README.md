@@ -32,41 +32,9 @@ A complete RV32I single-cycle processor implemented in Verilog. This is a straig
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      RV32I SINGLE-CYCLE PROCESSOR                       │
-└─────────────────────────────────────────────────────────────────────────┘
 
-          ┌──────────┐      ┌──────────┐       ┌─────────────┐
-          │ PC       │      │          │       │ Decoder/    │
-          │ Register │──── ▶│ IMEM     │───── ▶│ Controller  │
-          │          │      │          │       │             │
-          └──────────┘      └──────────┘       └─────────────┘
-              ▲                                     │
-              │                                     │ Control Signals
-              │                                     ▼
-              │            ┌──────────┐        ┌──────────┐
-              │            │ RegFile  │        │ ALU      │
-              │            │ 32x32    │◀ ──── ▶│ Unit     │
-              │            │          │        │          │ 
-              │            └──────────┘        └──────────┘
-              │                 │                   │
-              │                 │                   ▼
-              │                 │              ┌──────────┐
-              │                 │              │ DMEM     │
-              │                 │              │          │
-              │                 │              └──────────┘
-              │                 │                   │
-              │                 ▼                   ▼
-              │            ┌──────────────────────────────┐
-              │            │    Writeback Mux             │
-              │            └──────────────────────────────┘
-              │                           │
-              │                           ▼
-              │                   ┌────────────────┐
-              └───────────────────│ PC Next Logic  │
-                                  └────────────────┘
-```
+![Architecture](./RV32I_Single-Cycle_Processor—Datapath_and_Control_Architecture.svg)
+
 
 ### Single-Cycle Execution
 
