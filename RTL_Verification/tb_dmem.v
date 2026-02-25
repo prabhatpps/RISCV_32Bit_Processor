@@ -13,7 +13,7 @@
 //   3) mem_read=0 forces read_data = 0
 //   4) mem_write=0 prevents memory update
 //   5) Word addressing uses addr[31:2]
-//   6) Out-of-range accesses return safe values (0 on read, ignore write)
+//   6) No out-of-range checks in RTL (addressing is truncated by width)
 //
 // Verification Features:
 //   - Fully self-checking
@@ -52,8 +52,7 @@ module tb_dmem;
     // Instantiate DUT
     //=============================================================
     dmem #(
-        .DEPTH(DEPTH),
-        .MEM_INIT_FILE("")
+        .DEPTH(DEPTH)
     ) dut (
         .clk        (clk),
         .mem_read   (mem_read),
@@ -69,6 +68,7 @@ module tb_dmem;
     integer total_tests;
     integer passed_tests;
     integer failed_tests;
+    integer i;
 
     //=============================================================
     // Clock Generation (10ns period)
@@ -227,6 +227,10 @@ module tb_dmem;
         addr       = 32'h0000_0000;
         write_data = 32'h0000_0000;
 
+        // Clear memory (simulation-only)
+        for (i = 0; i < DEPTH; i = i + 1)
+            dut.mem[i] = 32'h0000_0000;
+
         $display("====================================================");
         $display(" DMEM VERIFICATION STARTED — Author: Prabhat Pandey");
         $display("====================================================");
@@ -270,22 +274,6 @@ module tb_dmem;
         //=========================================================
         run_read_test("mem_read=0 must force read_data=0 (even if mem contains data)",
                       1'b0, 32'h0000_0000, 32'h0000_0000);
-
-        //=========================================================
-        // TEST 7: Out-of-range read should return 0
-        // DEPTH=16 words -> valid word_index 0..15
-        // word_index=20 -> addr = 20*4 = 80 = 0x50
-        //=========================================================
-        run_read_test("Out-of-range read should return 0",
-                      1'b1, 32'h0000_0050, 32'h0000_0000);
-
-        //=========================================================
-        // TEST 8: Out-of-range write should be ignored
-        // Write to addr=0x50 (word_index=20), then read same addr => 0
-        //=========================================================
-        run_write_readback_test("Out-of-range write ignored, read should remain 0",
-                                1'b1, 32'h0000_0050, 32'hCAFEBABE,
-                                32'h0000_0000);
 
         //=========================================================
         // Final Summary Report

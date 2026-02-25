@@ -27,14 +27,19 @@
 //     all happen in one clock cycle.
 //   - Reset initializes PC to 0 and clears regfile.
 //   - Instruction memory and data memory are behavioral models.
+//   - Memory initialization is expected in the testbench (simulation-only).
 //   - No pipeline, no hazards, no stalls.
 //
 // Revision History:
-//   - 13-Feb-2026 : Initial version
+//   - 25-Feb-2026 : updated to make it synthesis-friendly
 //   - 16-Feb-2026 : Corrected regfile + imm_gen port integration
+//   - 16-Feb-2026 : Initial version
 //=====================================================================
 
-module riscv32_singlecycle_top (
+module riscv32_singlecycle_top #(
+    parameter IMEM_DEPTH_WORDS = 4096,
+    parameter DMEM_DEPTH_WORDS = 256
+)(
     input  wire clk,
     input  wire rst_n
 );
@@ -57,7 +62,9 @@ module riscv32_singlecycle_top (
     //=============================================================
     wire [31:0] instr;
 
-    imem u_imem (
+    imem #(
+        .MEM_DEPTH_WORDS(IMEM_DEPTH_WORDS)
+    ) u_imem (
         .addr  (pc_current),
         .instr (instr)
     );
@@ -229,8 +236,7 @@ module riscv32_singlecycle_top (
     wire [31:0] mem_data;
 
     dmem #(
-        .DEPTH(256),
-        .MEM_INIT_FILE("")
+        .DEPTH(DMEM_DEPTH_WORDS)
     ) u_dmem (
         .clk        (clk),
         .mem_read   (mem_read),

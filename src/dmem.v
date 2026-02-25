@@ -34,14 +34,16 @@
 //   - Write is synchronous on rising edge of clk.
 //   - If mem_read=0, read_data returns 0.
 //   - If mem_write=0, no memory update occurs.
+//   - Memory initialization is expected to be done at the top level or
+//     testbench (simulation-only), not inside this module.
 //
 // Revision History:
+//   - 25-Feb-2026 : updated to make it synthesis-friendly
 //   - 16-Feb-2026 : Initial version
 //=====================================================================
 
 module dmem #(
-    parameter DEPTH = 256,               // Number of 32-bit words
-    parameter MEM_INIT_FILE = ""         // Optional memory init file
+    parameter DEPTH = 256                // Number of 32-bit words
 )(
     input  wire        clk,
     input  wire        mem_read,
@@ -57,26 +59,6 @@ module dmem #(
     reg [31:0] mem [0:DEPTH-1];
 
     //=================================================================
-    // Optional memory initialization from file
-    //=================================================================
-    // If MEM_INIT_FILE is provided, memory is initialized at time 0.
-    // The file should contain 32-bit words in hex (one per line).
-    // Example line:
-    //   0000002A
-    //=================================================================
-    integer i;
-    initial begin
-        // Default clear memory
-        for (i = 0; i < DEPTH; i = i + 1)
-            mem[i] = 32'h0000_0000;
-
-        // Load file if provided
-        if (MEM_INIT_FILE != "") begin
-            $readmemh(MEM_INIT_FILE, mem);
-        end
-    end
-
-    //=================================================================
     // Word index extraction
     //=================================================================
     // We assume aligned accesses, so addr[1:0] = 00.
@@ -89,25 +71,18 @@ module dmem #(
     // Combinational read
     //=================================================================
     always @(*) begin
-        if (mem_read) begin
-            if (word_index < DEPTH)
-                read_data = mem[word_index];
-            else
-                read_data = 32'h0000_0000; // out-of-range safe
-        end
-        else begin
+        if (mem_read)
+            read_data = mem[word_index];
+        else
             read_data = 32'h0000_0000;
-        end
     end
 
     //=================================================================
     // Synchronous write (posedge)
     //=================================================================
     always @(posedge clk) begin
-        if (mem_write) begin
-            if (word_index < DEPTH)
-                mem[word_index] <= write_data;
-        end
+        if (mem_write)
+            mem[word_index] <= write_data;
     end
 
 endmodule

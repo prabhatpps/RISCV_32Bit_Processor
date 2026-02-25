@@ -1,13 +1,14 @@
 //=====================================================================
-// File        : tb_riscv32_singlecycle_top_addi_prog.v
+// File        : tb_riscv32_singlecycle_top_program_1.v
 // Author      : Prabhat Pandey
-// Created On  : 16-Feb-2026
+// Created On  : 25-Feb-2026
 // Project     : RV32I Single-Cycle 32-bit RISC-V Processor
-// Testbench   : tb_riscv32_singlecycle_top_addi_prog
+// Testbench   : tb_riscv32_singlecycle_top_program_1
 // Description :
-//   Fully self-checking top-level testbench for riscv32_singlecycle_top.
+//   Fully self-checking top-level testbench for riscv32_singlecycle_top
+//   using program_1.hex.
 //
-// Program Used (program.hex):
+// Program Used (program_1.hex):
 //   00000013   nop
 //   00100093   addi x1,  x0, 1
 //   00200113   addi x2,  x0, 2
@@ -52,15 +53,21 @@
 //   - Final verification summary report
 //
 // Run Commands:
-//   iverilog -o ./Verification_Results/result_tb_top_addi \
-//       ./src/*.v ./RTL_Verification/tb_riscv32_singlecycle_top.v
+//   iverilog -o ./Verification_Results/result_tb_top_program_1 \
+//       ./src/*.v ./RTL_Verification/tb_riscv32_singlecycle_top_program_1.v
 //
-//   vvp ./Verification_Results/result_tb_top_addi
+//   vvp ./Verification_Results/result_tb_top_program_1
 //=====================================================================
 
 `timescale 1ns/1ps
 
-module tb_riscv32_singlecycle_top;
+module tb_riscv32_singlecycle_top_program_1;
+
+    //=============================================================
+    // Parameters
+    //=============================================================
+    localparam IMEM_DEPTH_WORDS = 4096;
+    localparam DMEM_DEPTH_WORDS = 256;
 
     //=============================================================
     // Clock / Reset
@@ -71,7 +78,10 @@ module tb_riscv32_singlecycle_top;
     //=============================================================
     // Instantiate DUT
     //=============================================================
-    riscv32_singlecycle_top dut (
+    riscv32_singlecycle_top #(
+        .IMEM_DEPTH_WORDS(IMEM_DEPTH_WORDS),
+        .DMEM_DEPTH_WORDS(DMEM_DEPTH_WORDS)
+    ) dut (
         .clk   (clk),
         .rst_n (rst_n)
     );
@@ -82,6 +92,7 @@ module tb_riscv32_singlecycle_top;
     integer total_tests;
     integer passed_tests;
     integer failed_tests;
+    integer i;
 
     //=============================================================
     // Clock Generation (10ns period)
@@ -154,9 +165,16 @@ module tb_riscv32_singlecycle_top;
         failed_tests = 0;
 
         $display("====================================================");
-        $display(" RV32 TOP (ADDI PROGRAM) VERIFICATION STARTED — Author: Prabhat Pandey");
+        $display(" RV32 TOP (PROGRAM 1) VERIFICATION STARTED — Author: Prabhat Pandey");
         $display("====================================================");
         $display("");
+
+        // Load program into IMEM (simulation-only)
+        $readmemh("program_1.hex", dut.u_imem.mem);
+
+        // Clear DMEM (simulation-only)
+        for (i = 0; i < DMEM_DEPTH_WORDS; i = i + 1)
+            dut.u_dmem.mem[i] = 32'h0000_0000;
 
         // Reset sequence
         rst_n = 1'b0;
@@ -211,7 +229,7 @@ module tb_riscv32_singlecycle_top;
         // Final Summary
         //=========================================================
         $display("====================================================");
-        $display(" RV32 TOP (ADDI PROGRAM) VERIFICATION REPORT");
+        $display(" RV32 TOP (PROGRAM 1) VERIFICATION REPORT");
         $display("====================================================");
         $display("   Total Tests   : %0d", total_tests);
         $display("   Passed        : %0d", passed_tests);

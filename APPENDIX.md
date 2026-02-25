@@ -126,54 +126,60 @@ Complete control signal generation for all instruction types:
 **Assembly Code (test_program.s):**
 
 ```assembly
-# RV32I Test Program
-# Tests: arithmetic, logic, load/store, branches, jumps
+# RV32I Test Program (Decoded from Given Machine Code)
+# Tests: arithmetic, logic, shifts, load/store, branches, jumps
 
 .text
 .globl _start
 
 _start:
+
+    # NOP (Pipeline alignment / safe start)
+    addi x0, x0, 0          # No operation
+
     # Test 1: Basic Arithmetic
     addi x1, x0, 10         # x1 = 10
     addi x2, x0, 20         # x2 = 20
-    add  x3, x1, x2         # x3 = 30
-    sub  x4, x2, x1         # x4 = 10
-    
+    add  x3, x1, x2         # x3 = x1 + x2 = 30
+    sub  x4, x1, x2         # x4 = x1 - x2 = -10
+
     # Test 2: Logical Operations
-    andi x5, x3, 0xFF       # x5 = x3 & 0xFF
-    ori  x6, x1, 0xF0       # x6 = x1 | 0xF0
-    xori x7, x2, 0x55       # x7 = x2 ^ 0x55
-    
+    andi x5, x7, 0xFF       # x5 = x7 & 0xFF (mask lower 8 bits)
+    ori  x6, x2, 0xF0       # x6 = x2 | 0xF0
+    xori x7, x5, 0x55       # x7 = x5 ^ 0x55
+
     # Test 3: Shifts
-    slli x8, x1, 2          # x8 = x1 << 2 = 40
-    srli x9, x2, 1          # x9 = x2 >> 1 = 10
-    
+    slli x8, x1, 2          # x8 = x1 << 2
+    srli x9, x3, 1          # x9 = x3 >> 1 (logical)
+
     # Test 4: Set Less Than
-    slti  x10, x1, 15       # x10 = (x1 < 15) = 1
-    sltiu x11, x2, 25       # x11 = (x2 < 25) = 1
-    
+    slti  x10, x1, 15       # x10 = 1 if x1 < 15 else 0
+    sltu  x11, x2, x25      # x11 = 1 if x2 < x25 (unsigned)
+
     # Test 5: Load/Store
-    sw   x3, 0(x0)          # Store x3 to address 0
-    lw   x12, 0(x0)         # Load from address 0 (x12 = 30)
-    
-    # Test 6: Branches
-    beq  x3, x12, test_jal  # Should take branch (x3 == x12)
-    addi x13, x0, 99        # Should be skipped
-    
-test_jal:
-    # Test 7: JAL
-    jal  x14, test_jalr     # x14 = return address
-    
-test_jalr:
-    # Test 8: LUI and AUIPC
-    lui  x15, 0x12345       # x15 = 0x12345000
-    auipc x16, 0            # x16 = PC
-    
-    # End of tests
-    addi x17, x0, 1         # Success flag
-    
+    sw   x3, 0(x0)          # Store x3 at memory address 0
+    lw   x12, 0(x0)         # Load from memory address 0 into x12
+
+    # Test 6: Branch
+    beq  x3, x12, jump_label  # Branch if equal
+    addi x13, x0, 99        # Executed only if branch NOT taken
+
+jump_label:
+
+    # Test 7: Jump and Link
+    jal  x15, next_section  # x15 = return address
+
+next_section:
+
+    # Test 8: Upper Immediate Instructions
+    lui   x14, 0x12345      # x14 = 0x12345000
+    auipc x16, 0            # x16 = current PC
+
+    # End of Tests
+    addi x17, x0, 1         # Success flag = 1
+
 infinite_loop:
-    beq  x0, x0, infinite_loop  # Infinite loop
+    beq x0, x0, infinite_loop   # Infinite loop
 ```
 
 **Machine Code (program.hex):**
