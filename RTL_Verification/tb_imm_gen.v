@@ -1,7 +1,7 @@
 //=====================================================================
 // File        : tb_imm_gen.v
 // Author      : Prabhat Pandey
-// Created On  : 15-Feb-2026
+// Created On  : 25-Feb-2026
 // Project     : RV32I Single-Cycle 32-bit RISC-V Processor
 // Testbench   : tb_imm_gen
 // Description :
@@ -35,17 +35,30 @@
 module tb_imm_gen;
 
     //=============================================================
+    // Testbench Parameters
+    //=============================================================
+    localparam integer TEST_DELAY = 10; // ns between tests for waveform visibility
+
+    //=============================================================
     // DUT Signals
     //=============================================================
     reg  [31:0] instr;
-    wire [31:0] imm_out;
+    wire [31:0] imm_i;
+    wire [31:0] imm_s;
+    wire [31:0] imm_b;
+    wire [31:0] imm_u;
+    wire [31:0] imm_j;
 
     //=============================================================
     // Instantiate DUT
     //=============================================================
     imm_gen dut (
-        .instr   (instr),
-        .imm_out (imm_out)
+        .instr (instr),
+        .imm_i (imm_i),
+        .imm_s (imm_s),
+        .imm_b (imm_b),
+        .imm_u (imm_u),
+        .imm_j (imm_j)
     );
 
     //=============================================================
@@ -54,6 +67,14 @@ module tb_imm_gen;
     integer total_tests;
     integer passed_tests;
     integer failed_tests;
+
+    //=============================================================
+    // VCD Dump (for GTKWave)
+    //=============================================================
+    initial begin
+        $dumpfile("tb_imm_gen.vcd");
+        $dumpvars(0, tb_imm_gen);
+    end
 
     //=============================================================
     // Task: Divider
@@ -93,8 +114,31 @@ module tb_imm_gen;
             instr = instr_in;
             #2; // combinational settle
 
-            got_imm = imm_out;
-            opc     = get_opcode(instr_in);
+            opc = get_opcode(instr_in);
+
+            // Select the correct immediate based on opcode
+            case (opc)
+                7'b0010011, // OP-IMM
+                7'b0000011, // LOAD
+                7'b1100111: // JALR
+                    got_imm = imm_i;
+
+                7'b0100011: // STORE
+                    got_imm = imm_s;
+
+                7'b1100011: // BRANCH
+                    got_imm = imm_b;
+
+                7'b0110111, // LUI
+                7'b0010111: // AUIPC
+                    got_imm = imm_u;
+
+                7'b1101111: // JAL
+                    got_imm = imm_j;
+
+                default:
+                    got_imm = 32'h0000_0000;
+            endcase
 
             // Print Inputs
             $display("Inputs:");
@@ -123,6 +167,8 @@ module tb_imm_gen;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 
@@ -341,3 +387,4 @@ module tb_imm_gen;
     end
 
 endmodule
+
