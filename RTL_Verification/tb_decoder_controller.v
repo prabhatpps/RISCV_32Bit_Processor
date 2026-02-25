@@ -41,6 +41,11 @@
 module tb_decoder_controller;
 
     //=============================================================
+    // Testbench Parameters
+    //=============================================================
+    localparam integer TEST_DELAY = 10; // ns between tests for waveform visibility
+
+    //=============================================================
     // DUT Inputs
     //=============================================================
     reg  [6:0] opcode;
@@ -93,6 +98,14 @@ module tb_decoder_controller;
     integer total_tests;
     integer passed_tests;
     integer failed_tests;
+
+    //=============================================================
+    // VCD Dump (for GTKWave)
+    //=============================================================
+    initial begin
+        $dumpfile("tb_decoder_controller.vcd");
+        $dumpvars(0, tb_decoder_controller);
+    end
 
     //=============================================================
     // Task: Divider
@@ -230,6 +243,8 @@ module tb_decoder_controller;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 

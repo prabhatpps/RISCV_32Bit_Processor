@@ -32,6 +32,11 @@
 module tb_pc_next_logic;
 
     //=============================================================
+    // Testbench Parameters
+    //=============================================================
+    localparam integer TEST_DELAY = 10; // ns between tests for waveform visibility
+
+    //=============================================================
     // DUT Inputs
     //=============================================================
     reg  [31:0] pc_current;
@@ -74,6 +79,14 @@ module tb_pc_next_logic;
     integer total_tests;
     integer passed_tests;
     integer failed_tests;
+
+    //=============================================================
+    // VCD Dump (for GTKWave)
+    //=============================================================
+    initial begin
+        $dumpfile("tb_pc_next_logic.vcd");
+        $dumpvars(0, tb_pc_next_logic);
+    end
 
     //=============================================================
     // Task: Divider
@@ -168,6 +181,8 @@ module tb_pc_next_logic;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 

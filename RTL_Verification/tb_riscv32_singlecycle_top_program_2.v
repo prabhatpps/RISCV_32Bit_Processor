@@ -57,12 +57,15 @@ module tb_riscv32_singlecycle_top_program_2;
     //=============================================================
     localparam IMEM_DEPTH_WORDS = 4096;
     localparam DMEM_DEPTH_WORDS = 256;
+    // NOTE: Keep this below the 10ns clock period to avoid skipping fetch cycles.
+    localparam integer TEST_DELAY = 1; // ns between checks for waveform visibility
 
     //=============================================================
     // Clock / Reset
     //=============================================================
     reg clk;
     reg rst_n;
+    reg clk_en;
 
     //=============================================================
     // Instantiate DUT
@@ -84,11 +87,24 @@ module tb_riscv32_singlecycle_top_program_2;
     integer i;
 
     //=============================================================
+    // VCD Dump (for GTKWave)
+    //=============================================================
+    initial begin
+        $dumpfile("tb_riscv32_singlecycle_top_program_2.vcd");
+        $dumpvars(0, tb_riscv32_singlecycle_top_program_2);
+    end
+
+    //=============================================================
     // Clock Generation (10ns period)
     //=============================================================
     initial begin
         clk = 1'b0;
-        forever #5 clk = ~clk;
+        forever begin
+            #5;
+            if (clk_en) begin
+                clk = ~clk;
+            end
+        end
     end
 
     //=============================================================
@@ -143,6 +159,8 @@ module tb_riscv32_singlecycle_top_program_2;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 
@@ -185,6 +203,8 @@ module tb_riscv32_singlecycle_top_program_2;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 
@@ -293,6 +313,7 @@ module tb_riscv32_singlecycle_top_program_2;
         $display("");
 
         // Reset sequence
+        clk_en = 1'b1;
         rst_n = 1'b0;
         #20;
         rst_n = 1'b1;
@@ -309,6 +330,8 @@ module tb_riscv32_singlecycle_top_program_2;
         end
 
         // Verify state after first pass (before loop executes 0x3C)
+        // Pause clock so the PC doesn't advance while we check registers
+        clk_en = 1'b0;
         check_reg("Post-pass: x1 = 10",  5'd1,  32'd10);
         check_reg("Post-pass: x2 = 20",  5'd2,  32'd20);
         check_reg("Post-pass: x3 = 30",  5'd3,  32'd30);
@@ -329,6 +352,9 @@ module tb_riscv32_singlecycle_top_program_2;
 
         // Verify DMEM write + readback (mem[0] = x3)
         check_reg("Post-pass: mem[0] = 30 (via LW x12)", 5'd12, 32'd30);
+
+        // Resume clock for loop execution
+        clk_en = 1'b1;
 
         // Enter loop: BEQ x0, x0, -20 takes us to 0x3C
         @(posedge clk);

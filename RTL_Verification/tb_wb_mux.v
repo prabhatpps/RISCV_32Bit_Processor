@@ -34,6 +34,11 @@
 module tb_wb_mux;
 
     //=============================================================
+    // Testbench Parameters
+    //=============================================================
+    localparam integer TEST_DELAY = 10; // ns between tests for waveform visibility
+
+    //=============================================================
     // DUT Inputs
     //=============================================================
     reg  [2:0]  wb_sel;
@@ -67,6 +72,14 @@ module tb_wb_mux;
     integer total_tests;
     integer passed_tests;
     integer failed_tests;
+
+    //=============================================================
+    // VCD Dump (for GTKWave)
+    //=============================================================
+    initial begin
+        $dumpfile("tb_wb_mux.vcd");
+        $dumpvars(0, tb_wb_mux);
+    end
 
     //=============================================================
     // Task: Divider
@@ -142,6 +155,8 @@ module tb_wb_mux;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 

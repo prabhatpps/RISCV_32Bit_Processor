@@ -37,6 +37,11 @@
 module tb_imem_program_2;
 
     //=============================================================
+    // Testbench Parameters
+    //=============================================================
+    localparam integer TEST_DELAY = 10; // ns between tests for waveform visibility
+
+    //=============================================================
     // DUT Signals
     //=============================================================
     reg  [31:0] addr;
@@ -58,6 +63,14 @@ module tb_imem_program_2;
     integer total_tests;
     integer passed_tests;
     integer failed_tests;
+
+    //=============================================================
+    // VCD Dump (for GTKWave)
+    //=============================================================
+    initial begin
+        $dumpfile("tb_imem_program_2.vcd");
+        $dumpvars(0, tb_imem_program_2);
+    end
 
     //=============================================================
     // Task: Divider
@@ -128,6 +141,8 @@ module tb_imem_program_2;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 

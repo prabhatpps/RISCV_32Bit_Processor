@@ -34,6 +34,11 @@
 module tb_branch_unit;
 
     //=============================================================
+    // Testbench Parameters
+    //=============================================================
+    localparam integer TEST_DELAY = 10; // ns between tests for waveform visibility
+
+    //=============================================================
     // DUT Signals
     //=============================================================
     reg  [2:0]  funct3;
@@ -57,6 +62,14 @@ module tb_branch_unit;
     integer total_tests;
     integer passed_tests;
     integer failed_tests;
+
+    //=============================================================
+    // VCD Dump (for GTKWave)
+    //=============================================================
+    initial begin
+        $dumpfile("tb_branch_unit.vcd");
+        $dumpvars(0, tb_branch_unit);
+    end
 
     //=============================================================
     // Task: Divider
@@ -122,6 +135,8 @@ module tb_branch_unit;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 

@@ -44,6 +44,11 @@
 module tb_alu_control;
 
     //=============================================================
+    // Testbench Parameters
+    //=============================================================
+    localparam integer TEST_DELAY = 10; // ns between tests for waveform visibility
+
+    //=============================================================
     // DUT Signals
     //=============================================================
     reg  [1:0] alu_op;
@@ -67,6 +72,14 @@ module tb_alu_control;
     integer total_tests;
     integer passed_tests;
     integer failed_tests;
+
+    //=============================================================
+    // VCD Dump (for GTKWave)
+    //=============================================================
+    initial begin
+        $dumpfile("tb_alu_control.vcd");
+        $dumpvars(0, tb_alu_control);
+    end
 
     //=============================================================
     // Task: Divider
@@ -131,6 +144,8 @@ module tb_alu_control;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 

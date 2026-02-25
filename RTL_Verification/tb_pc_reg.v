@@ -33,6 +33,11 @@
 module tb_pc_reg;
 
     //=============================================================
+    // Testbench Parameters
+    //=============================================================
+    localparam integer TEST_DELAY = 10; // ns between tests for waveform visibility
+
+    //=============================================================
     // DUT Signals
     //=============================================================
     reg         clk;
@@ -56,6 +61,14 @@ module tb_pc_reg;
     integer total_tests;
     integer passed_tests;
     integer failed_tests;
+
+    //=============================================================
+    // VCD Dump (for GTKWave)
+    //=============================================================
+    initial begin
+        $dumpfile("tb_pc_reg.vcd");
+        $dumpvars(0, tb_pc_reg);
+    end
 
     //=============================================================
     // Clock Generation (10ns period)
@@ -148,6 +161,8 @@ module tb_pc_reg;
             if (apply_reset) begin
                 rst_n = 1'b1;
             end
+
+            #(TEST_DELAY);
         end
     endtask
 

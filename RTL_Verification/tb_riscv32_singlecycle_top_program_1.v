@@ -68,12 +68,15 @@ module tb_riscv32_singlecycle_top_program_1;
     //=============================================================
     localparam IMEM_DEPTH_WORDS = 4096;
     localparam DMEM_DEPTH_WORDS = 256;
+    // NOTE: Keep this below the 10ns clock period to avoid skipping cycles.
+    localparam integer TEST_DELAY = 1; // ns between checks for waveform visibility
 
     //=============================================================
     // Clock / Reset
     //=============================================================
     reg clk;
     reg rst_n;
+    reg clk_en;
 
     //=============================================================
     // Instantiate DUT
@@ -95,11 +98,24 @@ module tb_riscv32_singlecycle_top_program_1;
     integer i;
 
     //=============================================================
+    // VCD Dump (for GTKWave)
+    //=============================================================
+    initial begin
+        $dumpfile("tb_riscv32_singlecycle_top_program_1.vcd");
+        $dumpvars(0, tb_riscv32_singlecycle_top_program_1);
+    end
+
+    //=============================================================
     // Clock Generation (10ns period)
     //=============================================================
     initial begin
         clk = 1'b0;
-        forever #5 clk = ~clk;
+        forever begin
+            #5;
+            if (clk_en) begin
+                clk = ~clk;
+            end
+        end
     end
 
     //=============================================================
@@ -150,6 +166,8 @@ module tb_riscv32_singlecycle_top_program_1;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 
@@ -177,6 +195,7 @@ module tb_riscv32_singlecycle_top_program_1;
             dut.u_dmem.mem[i] = 32'h0000_0000;
 
         // Reset sequence
+        clk_en = 1'b1;
         rst_n = 1'b0;
         #20;
         rst_n = 1'b1;
@@ -199,6 +218,9 @@ module tb_riscv32_singlecycle_top_program_1;
         $display(" CHECKING FINAL REGISTER STATE");
         $display("====================================================");
         $display("");
+
+        // Pause clock so PC/reg state doesn't change while checking
+        clk_en = 1'b0;
 
         //=========================================================
         // Check x0 always zero
@@ -224,6 +246,9 @@ module tb_riscv32_singlecycle_top_program_1;
         check_reg("x13 must be 49", 5'd13, 32'd49);
         check_reg("x14 must be 56", 5'd14, 32'd56);
         check_reg("x15 must be 64", 5'd15, 32'd64);
+
+        // Resume clock if needed for future extensions
+        clk_en = 1'b1;
 
         //=========================================================
         // Final Summary

@@ -34,6 +34,11 @@
 module tb_regfile;
 
     //=============================================================
+    // Testbench Parameters
+    //=============================================================
+    localparam integer TEST_DELAY = 10; // ns between tests for waveform visibility
+
+    //=============================================================
     // DUT Signals
     //=============================================================
     reg         clk;
@@ -67,6 +72,14 @@ module tb_regfile;
     integer total_tests;
     integer passed_tests;
     integer failed_tests;
+
+    //=============================================================
+    // VCD Dump (for GTKWave)
+    //=============================================================
+    initial begin
+        $dumpfile("tb_regfile.vcd");
+        $dumpvars(0, tb_regfile);
+    end
 
     //=============================================================
     // Clock Generation (10ns period)
@@ -155,8 +168,10 @@ module tb_regfile;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
-    endtask
+   endtask
 
     //=============================================================
     // Task: Perform one write
@@ -184,6 +199,8 @@ module tb_regfile;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 

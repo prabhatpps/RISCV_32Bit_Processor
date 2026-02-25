@@ -37,6 +37,7 @@ module tb_dmem;
     // Parameters (must match DUT config)
     //=============================================================
     localparam DEPTH = 16; // keep small for test visibility
+    localparam integer TEST_DELAY = 10; // ns between tests for waveform visibility
 
     //=============================================================
     // DUT Signals
@@ -69,6 +70,14 @@ module tb_dmem;
     integer passed_tests;
     integer failed_tests;
     integer i;
+
+    //=============================================================
+    // VCD Dump (for GTKWave)
+    //=============================================================
+    initial begin
+        $dumpfile("tb_dmem.vcd");
+        $dumpvars(0, tb_dmem);
+    end
 
     //=============================================================
     // Clock Generation (10ns period)
@@ -141,6 +150,8 @@ module tb_dmem;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 
@@ -208,6 +219,8 @@ module tb_dmem;
 
             print_divider();
             $display("");
+
+            #(TEST_DELAY);
         end
     endtask
 
